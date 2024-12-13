@@ -1,0 +1,25 @@
+[
+   
+    {
+        "model": "gpt-4-turbo",
+        "api_key": "3661ab7c5e4d49669cbe4d1d96ce6c3a",
+        "base_url": "https://anildwaopenaiwestus.openai.azure.com/",
+        "api_type": "azure",
+        "api_version": "2023-07-01-preview"
+    },
+    {
+        "model": "gpt-4o-global",
+        "api_key": "d9133781da8e47f8bd61e83a06bc792c",
+        "base_url": "https://ai-anildwaaillmhub716376296514.openai.azure.com/",
+        "api_type": "azure",
+        "api_version": "2023-07-01-preview"
+    },
+    {
+        "model": "gpt-35-turbo",
+        "api_key": "a1e2bde3423b4cff9926c625d69c4d07",
+        "base_url": "https://anildwaopenaiwestus.openai.azure.com/",
+        "api_type": "azure",
+        "api_version": "2023-07-01-preview"
+    }
+    
+]
