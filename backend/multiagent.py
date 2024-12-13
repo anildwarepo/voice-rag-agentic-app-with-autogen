@@ -3,10 +3,11 @@ from multi_agent.multi_agent_implementation import *
 
 runtime = SingleThreadedAgentRuntime()
 asyncio.run(register_agents(runtime))
-runtime.start()
+
+
 
 async def get_answer(conversation_id, user_query):
-
+    
     await runtime.publish_message(GroupChatMessage(body=UserMessage(content=user_query, source="user"), 
                                                 conversation_id=conversation_id), DefaultTopicId(type="group_chat_any_topic", source=conversation_id)) 
 
@@ -32,8 +33,15 @@ async def get_answer(conversation_id, user_query):
     print(group_chat_result)
     return group_chat_result
 
+conversation_id1 = str(uuid.uuid4())
 async def start_multiagent_chat(user_message: str, image_url: str = None) -> str:
-    conversation_id1 = str(uuid.uuid4())
     #user_query = "I want to know my credit card balance."
+    
+    try:
+        runtime.start()
+    except Exception as e:
+        print(f"runtime already started: {e}")
+        
+
     result = await get_answer(conversation_id1, user_message)
     return result

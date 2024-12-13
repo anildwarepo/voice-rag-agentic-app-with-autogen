@@ -78,7 +78,7 @@ class RTMiddleTier:
                     session = message["session"]
                     # Hide the instructions, tools and max tokens from clients, if we ever allow client-side 
                     # tools, this will need updating
-                    session["instructions"] = ""
+                    session["instructions"] = self.system_message  #""
                     session["tools"] = []
                     session["tool_choice"] = "none"
                     session["max_response_output_tokens"] = None

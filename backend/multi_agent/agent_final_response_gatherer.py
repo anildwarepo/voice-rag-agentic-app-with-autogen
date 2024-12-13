@@ -1,5 +1,5 @@
 import asyncio
-from multi_agent_message_types import *
+from multi_agent.multi_agent_message_types import *
 
 llm_results_dict = {}
 condition = asyncio.Condition()

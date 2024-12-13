@@ -7,8 +7,8 @@ sys.path.append(parent_dir)
 print(parent_dir)
 
 from common.azure_openai_imports import *
-from multi_agent_tools import *
-from agent_final_response_gatherer import *
+from multi_agent.multi_agent_tools import *
+from multi_agent.agent_final_response_gatherer import *
 from typing import List, Union
 import json
 from typing import Type
@@ -33,7 +33,9 @@ class NeedMoreInfo(BaseModel):
     body: List[LLMMessage]
     conversation_id: str
 
-
+class ToolResult(BaseModel):
+    body: List[LLMMessage]
+    conversation_id: str 
 
 class IntermediateResult(BaseModel):
     body: List[LLMMessage]
@@ -109,6 +111,9 @@ class FinalResponderAgent(RoutedAgent):
         await notify_result(message, completion.content)
         del self._chat_history[1:]
 
+
+
+
 @type_subscription(topic_type="Transify_support_topic")
 class AccountInfoAgent(RoutedAgent):
     def __init__(self, model_client: ChatCompletionClient, tool_schema: List[ToolSchema], tool_agent_type: str) -> None:
@@ -117,7 +122,7 @@ class AccountInfoAgent(RoutedAgent):
         self._system_message = SystemMessage("""
         You are Transify Support Agent. Transify is an online payment platform.
         You can provide information about the account details. 
-        You need to know the 'account number' to provide the account details.
+        You need to know 'account number' to provide the account details and nothing else.
         If the 'account number' is provided use the get_account_info tool to get the account details.
         Format the response with 'Account Details:'.
         If the 'account number' is not provided, ask the user to provide the 'account number'.                                                      
@@ -142,7 +147,7 @@ class TransactionInfoAgent(RoutedAgent):
         self._system_message = SystemMessage("""
         You are Transify Support Agent. Transify is an online payment platform.
         You can provide information about the transaction details for the account.
-        You need to know the 'account number' to provide the transaction details.
+        You need to know the 'account number' to provide the transaction details and nothing else.
         If the 'account number' is provided use the get_transaction_details tool to get the transaction details.
         Format the response with 'Transaction Details:'.
         If the 'account number' is not provided, ask the user to provide the 'account number'.                                                      

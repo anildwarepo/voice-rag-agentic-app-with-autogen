@@ -6,7 +6,7 @@ sample_data_path = os.path.join("..", "sample_data")
 
 def get_account_info(account_id: str) -> str:
     try:
-        account_data_file = os.path.join(sample_data_path, f"{account_id}.json")
+        account_data_file = os.path.join("sample_data", f"{account_id}.json")
         with open(account_data_file, "r") as file:
             data = file.read()
         return data
@@ -16,7 +16,7 @@ def get_account_info(account_id: str) -> str:
 
 def get_transaction_details(account_id: str) -> str:
     try:
-        txn_data_file = os.path.join(sample_data_path, f"Txn_{account_id}.json")
+        txn_data_file = os.path.join("sample_data", f"Txn_{account_id}.json")
         with open(txn_data_file, "r") as file:
             data = file.read()
         return data

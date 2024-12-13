@@ -6,6 +6,25 @@ from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorizableTextQuery
 from rtmt import RTMiddleTier, Tool, ToolResult, ToolResultDirection
 
+
+_multiagent_tool_schema = {
+    "type": "function",
+    "name": "multiagent",
+    "description": "provide account details and transation details related to transify customer credit card account. ",
+                   
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "user query as is"
+            }
+        },
+        "required": ["query"],
+        "additionalProperties": False
+    }
+}
+
 _search_tool_schema = {
     "type": "function",
     "name": "search",
@@ -47,23 +66,36 @@ _grounding_tool_schema = {
     }
 }
 
+
+import multiagent
+async def _multi_agent_tool(search_client: SearchClient, args: Any) -> ToolResult:
+    print(f"User query: {args['query']}. Starting multi-agent chat.")
+    result = await multiagent.start_multiagent_chat(args['query'])
+
+    return ToolResult(result, ToolResultDirection.TO_SERVER)
+
+
 async def _search_tool(search_client: SearchClient, args: Any) -> ToolResult:
-    print(f"Searching for '{args['query']}' in the knowledge base.")
+    print(f"User query: {args['query']}. Starting multi-agent chat.")
+    #print(f"Searching for '{args['query']}' in the knowledge base.")
     # Hybrid + Reranking query using Azure AI Search
-    search_results = await search_client.search(
-        search_text=args['query'], 
-        query_type="semantic",
-        semantic_configuration_name='aml-semantic-config',
-        top=5,
-        vector_queries=[VectorizableTextQuery(text=args['query'], k_nearest_neighbors=50, fields="contentVector")],
-        #select="pageNumber,title,content")
-        select="content")
-    result = ""
-    async for r in search_results:
-        if 'pageNumber' in r:
-            result += f"[{r['pageNumber']}]: {r['content']}\n-----\n"
-        else:
-            result += f"{r['content']}\n-----\n"
+    #search_results = await search_client.search(
+    #    search_text=args['query'], 
+    #    query_type="semantic",
+    #    semantic_configuration_name='aml-semantic-config',
+    #    top=5,
+    #    vector_queries=[VectorizableTextQuery(text=args['query'], k_nearest_neighbors=50, fields="contentVector")],
+    #    #select="pageNumber,title,content")
+    #    select="content")
+    #result = ""
+    #async for r in search_results:
+    #    if 'pageNumber' in r:
+    #        result += f"[{r['pageNumber']}]: {r['content']}\n-----\n"
+    #    else:
+    #        result += f"{r['content']}\n-----\n"
+
+    result = await multiagent.start_multiagent_chat(args['query'])
+
     return ToolResult(result, ToolResultDirection.TO_SERVER)
 
 KEY_PATTERN = re.compile(r'^[a-zA-Z0-9_=\-]+$')
@@ -102,5 +134,6 @@ def attach_rag_tools(rtmt: RTMiddleTier, search_endpoint: str, search_index: str
         credentials.get_token("https://search.azure.com/.default") # warm this up before we start getting requests
     search_client = SearchClient(search_endpoint, search_index, credentials, user_agent="RTMiddleTier")
 
-    rtmt.tools["search"] = Tool(schema=_search_tool_schema, target=lambda args: _search_tool(search_client, args))
+    #rtmt.tools["search"] = Tool(schema=_search_tool_schema, target=lambda args: _search_tool(search_client, args))
+    rtmt.tools["multiagent"] = Tool(schema=_multiagent_tool_schema, target=lambda args: _multi_agent_tool(search_client, args))
     rtmt.tools["report_grounding"] = Tool(schema=_grounding_tool_schema, target=lambda args: _report_grounding_tool(search_client, args))
