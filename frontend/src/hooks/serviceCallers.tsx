@@ -1,19 +1,20 @@
 import { ChatMessage } from '../interfaces/iprompt';
 //import config from "../config.json";
 
-let streamReader: ReadableStreamDefaultReader<Uint8Array>;
+let streamReader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 
 const backendAPIHost = "http://localhost:8765";
 //const backendAPIHost = ""; // config.backendAPIHost;
 
-export const cancelStream = (onDataReceived:any) => {
-    if (streamReader) {
+export const cancelStream = (onDataReceived: (data: string) => void) => {
+  if (streamReader) {  // Ensure streamReader is assigned before calling cancel()
       streamReader.cancel().then(() => {
-        onDataReceived("");
+          onDataReceived("");
+          streamReader = null; // Reset streamReader after cancellation
       }).catch(error => {
-        console.error("Error cancelling the stream:", error);
+          console.error("Error cancelling the stream:", error);
       });
-    }
+  }
 }
 
 export const getDocList = (onDataReceived:any) => {
@@ -80,7 +81,7 @@ export const getGreetings = (onDataReceived:any) => {
     });
 }
 
-export const sendMessage = (userQuery: string, chatMessage: ChatMessage, onDataReceived:any, queryCategory?: string, imageUrl?: string) => {
+export const sendMessage = (userQuery: string, chatMessage: ChatMessage, onDataReceived:any, queryCategory?: string, imageUrl?: string, conversationId?: string) => {
 
     if (userQuery === '') {
         return;
@@ -90,6 +91,7 @@ export const sendMessage = (userQuery: string, chatMessage: ChatMessage, onDataR
                         "queue_name": chatMessage?.queue_name, 
                         "query_category": queryCategory,
                         "image_url": imageUrl,
+                        "conversation_id": conversationId,
                         "use_streaming": chatMessage?.use_streaming}
 
     const postPayLoad = {

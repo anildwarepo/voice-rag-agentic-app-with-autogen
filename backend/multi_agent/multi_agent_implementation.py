@@ -2,7 +2,7 @@ import sys
 import os
 
 # Assuming the common folder is one level up
-parent_dir = os.path.abspath(os.path.join(os.getcwd(), ".."))
+parent_dir = os.path.abspath(os.path.join(os.getcwd(), "."))
 sys.path.append(parent_dir)
 print(parent_dir)
 
@@ -22,7 +22,11 @@ class GroupChatMessage(BaseModel):
 class TransactionInfo(BaseModel):
     body: List[LLMMessage]
     conversation_id: str
-    
+
+
+class ProductInfo(BaseModel):
+    body: List[LLMMessage]
+    conversation_id: str
 
 class AccountInfo(BaseModel):
     body: List[LLMMessage]
@@ -41,7 +45,7 @@ class IntermediateResult(BaseModel):
     body: List[LLMMessage]
     conversation_id: str 
 
-TransactionAccountInfo = Union[TransactionInfo, AccountInfo, NeedMoreInfo, IntermediateResult]
+TransactionAccountInfo = Union[TransactionInfo, AccountInfo, ProductInfo, NeedMoreInfo, IntermediateResult]
 
 FinalResponderAgentMessage = Union[IntermediateResult, NeedMoreInfo]
 
@@ -79,6 +83,9 @@ async def handle_transaction_account_info_message(self, message: List[LLMMessage
 
 
 
+
+
+
 @type_subscription(topic_type="Transify_support_topic")
 class FinalResponderAgent(RoutedAgent):
     def __init__(self, model_client: ChatCompletionClient) -> None:
@@ -87,7 +94,9 @@ class FinalResponderAgent(RoutedAgent):
             
             self._chat_history : List[LLMMessage]  = [SystemMessage(
             """
-            You are Transify Support reviewer agent. Transify is an online payment platform.
+            You are on online payments company Transify's customer support assistant. You can speak only english language.
+            Transify is an online retail company that sells Sports and Fitness products and issues credit cards. 
+            You can answer questions about Transify products , credit card balance, transaction details.
             You will be provided with Conversation History between users and multiple agents. 
             You need to review the conversation and provide the final response to the user.
             If the question has been answered correctly, state the complete answer. Otherwise ask the user for required information based on the conversation history.
@@ -112,6 +121,32 @@ class FinalResponderAgent(RoutedAgent):
         del self._chat_history[1:]
 
 
+
+
+@type_subscription(topic_type="Transify_support_topic")
+class ProductCatalogAgent(RoutedAgent):
+    def __init__(self, model_client: ChatCompletionClient, tool_schema: List[ToolSchema], tool_agent_type: str) -> None:
+        super().__init__("A Product Catalog Agent")
+        self._model_client = model_client
+        self._system_message = SystemMessage("""
+        You are on online payments company Transify's customer support assistant. You can speak only english language.
+        Transify is an online retail company that sells Sports and Fitness products and issues credit cards. 
+        You can answer questions about Transify products only.
+        
+        You can find products based on end user query and search the product catalog with product recommendation. 
+        You need to use retrieve_search_results product catalog search tool to get the product information.
+
+
+        """)
+        self._chat_history : List[LLMMessage]  = [self._system_message]
+        self._model_client = model_client
+        self._tool_schema = tool_schema
+        self._tool_agent_id = AgentId(tool_agent_type, self.id.key)
+
+    @message_handler
+    async def handle_account_info_message(self, message: ProductInfo, ctx: MessageContext) -> None:
+        self._chat_history.extend(message.body)
+        await handle_transaction_account_info_message(self, self._chat_history, message.conversation_id, ctx)
 
 
 @type_subscription(topic_type="Transify_support_topic")
@@ -171,7 +206,9 @@ class GroupChatManager(RoutedAgent):
         self._model_client = model_client
         self._system_message = SystemMessage(
         """
-        You are a Transify Support Agent Manager. Transify is an online payment platform.
+        You are on online payments company Transify's customer support assistant. 
+        Transify is an online retail company that sells Sports and Fitness products and issues credit cards. 
+        You can answer questions about Transify products , credit card balance, transaction details.
         You can help users with their Transify related queries. 
         You need to respond only to queries related to Transify and nothing else. 
         If the question is not related to Transify, state that you only respond to Transify related queries and cannot answer this question.        
@@ -180,8 +217,9 @@ class GroupChatManager(RoutedAgent):
         
         1. AccountInfo: If the question is about account details.
         2. TransactionInfo: If the question is about transaction details.
-        3. IntermediateResult: If the question has been answered and needs to be formatted and sent to the user.
-        4. NeedMoreInfo: If you need more inputs from user to answer the question or cannot answer the question.
+        3. ProductInfo: If the question is about product search and recommendation.
+        4. IntermediateResult: If the question has been answered and needs to be formatted and sent to the user.
+        5. NeedMoreInfo: If you need more inputs from user to answer the question or cannot answer the question.
 
         Always respond in json format. DO NOT USE ```json or ``` in your response. 
 
@@ -235,6 +273,14 @@ async def register_agents(runtime):
             ),
         )
     
+    await ProductCatalogAgent.register(
+            runtime,
+            "ProductCatalogAgent",
+            lambda: ProductCatalogAgent(
+                get_model_client(), [tool.schema for tool in tools], "tool_executor_agent"
+            ),
+        )
+    
     await FinalResponderAgent.register(
             runtime,
             "FinalResponderAgent",
@@ -262,7 +308,7 @@ async def run_agents(runtime):
     conversation_id = str(uuid.uuid4())
     try:
         #await runtime.publish_message(GroupChatMessage(body=UserMessage(content="I want to know my credit card balance.", source="user"), conversation_id=conversation_id), DefaultTopicId(type="group_chat_any_topic", source=conversation_id)) 
-        await runtime.publish_message(GroupChatMessage(body=UserMessage(content="I want to know my credit card balance. My account number is A1234567890 ", source="user"), conversation_id=conversation_id), DefaultTopicId(type="group_chat_any_topic", source=conversation_id)) 
+        #await runtime.publish_message(GroupChatMessage(body=UserMessage(content="I am looking for swimming gear", source="user"), conversation_id=conversation_id), DefaultTopicId(type="group_chat_any_topic", source=conversation_id)) 
         await runtime.stop_when_idle()
     except Exception as e:
         print(f"Error in publishing message: {e}")

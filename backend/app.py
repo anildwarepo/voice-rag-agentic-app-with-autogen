@@ -38,11 +38,12 @@ async def handle_conversation(request):
     
     try:
         image_url = data['image_url']
+
     except KeyError:
         image_url = None
 
     try:
-        response = await agnext_bot.start_multiagent_chat(data['userMessage'], image_url)
+        response = await agnext_bot.start_multiagent_chat(data['userMessage'], data['conversation_id'], image_url)
         return web.Response(text=response)
     except Exception as e:
         print(e)
@@ -64,9 +65,11 @@ if __name__ == "__main__":
     rtmt = RTMiddleTier(llm_endpoint, llm_deployment, AzureKeyCredential(llm_key) if llm_key else credentials)
     rtmt.system_message = """
     You are on online payments company Transify's customer support assistant. You can speak only english language.
-    You can answer questions from user's credit card balance, transaction details.
+    Transify is an online retail company that sells Sports and Fitness products and issues credit cards. 
+    You can answer questions about Transify products , credit card balance, transaction details.
+    
     You need to listen to the user question and respond to user question by calling the 'multiagent' tool. 
-    Read the response as is from the 'multiagent' tool.
+    Always speak a summary of the output from the 'multiagent' tool but show the full output to the user.
     Always use the 'multiagent' tool to provide your response.
     """
     attach_rag_tools(rtmt, search_endpoint, search_index, AzureKeyCredential(search_key) if search_key else credentials)

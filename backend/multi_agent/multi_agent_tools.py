@@ -2,6 +2,8 @@ import os
 from typing import List
 from autogen_core.components.tools import FunctionTool, Tool, ToolSchema
 
+from search_helper import retrieve_search_results
+
 sample_data_path = os.path.join("..", "sample_data")
 
 def get_account_info(account_id: str) -> str:
@@ -25,5 +27,7 @@ def get_transaction_details(account_id: str) -> str:
 
 
 
-tools: List[Tool] = [FunctionTool(get_account_info, description="Gets account details for given account id."),
-                     FunctionTool(get_transaction_details, description="Gets transaction details for given account id.")]
+tools: List[Tool] = [
+                    FunctionTool(retrieve_search_results, description="Search products in product catalog."),
+                    FunctionTool(get_account_info, description="Gets account details for given account id."),
+                    FunctionTool(get_transaction_details, description="Gets transaction details for given account id.")]

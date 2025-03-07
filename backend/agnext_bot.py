@@ -21,6 +21,8 @@ from autogen_core.components import (
     type_subscription,
     Image
 )
+import os
+from dotenv import load_dotenv
 
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 import asyncio
@@ -32,8 +34,11 @@ token_provider = get_bearer_token_provider(
     DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default"
 )
 
-endpoint="https://anildwaopenaiwestus.openai.azure.com/"
-deployed_model = "gpt-4o"
+#endpoint="https://anildwaopenaiwestus.openai.azure.com/"
+#deployed_model = "gpt-4o"
+
+endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
+deployed_model = os.environ.get("DEPLOYMENT_NAME")
 
 def get_model_client() -> AzureOpenAIChatCompletionClient:
     return AzureOpenAIChatCompletionClient(
@@ -312,7 +317,7 @@ async def register_agents():
 asyncio.run(register_agents())
 
 
-async def start_multiagent_chat(user_message: str, image_url: str = None) -> str:
+async def start_multiagent_chat(user_message: str, conversation_id: str, image_url: str = None) -> str:
     
     try:
         start_time = time.time() 
@@ -326,7 +331,7 @@ async def start_multiagent_chat(user_message: str, image_url: str = None) -> str
         print(f"Error starting runtime: {e}")
         
 
-    conversation_id = str(uuid.uuid4())
+    #conversation_id = str(uuid.uuid4())
     
     if image_url:
         image_data = await Image.from_url(image_url)

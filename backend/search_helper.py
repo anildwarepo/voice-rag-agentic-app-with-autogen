@@ -22,7 +22,7 @@ from pathlib import Path
 import os
 import requests
 from azure.ai.documentintelligence import DocumentIntelligenceClient
-from azure.search.documents.models import VectorizableTextQuery
+from azure.search.documents.models import VectorizableTextQuery, VectorizableImageUrlQuery
 
 from dotenv import load_dotenv
 from azure.identity import DefaultAzureCredential
@@ -452,13 +452,30 @@ def get_index_fields(index_name):
             vector_fields.append(field.name)
     return select_fields, vector_fields
 
-async def retrieve_search_results(index_name: str, search_query: str, top_k: int = 3) -> str:
+async def retrieve_search_results(search_query: str, image_url: str = None, top_k: int = 3) -> str:
+    index_name = os.getenv("AZURE_SEARCH_INDEX", "")
+
+    if index_name == "":
+        raise ValueError("Index name is not set in the environment variables.")
+    
     select_fields, vector_fields = get_index_fields(index_name)  
     #select_fields = ["title", "content", "category", "tags"]
     search_client = SearchClient(endpoint=azure_search_endpoint, index_name=index_name, credential=credential)
     #vector_query = VectorizableTextQuery(text=search_query, k_nearest_neighbors=3, fields=search_fields, exhaustive=True)
-  
+    
+       
+
     vector_queries  = [VectorizableTextQuery(text=search_query, k_nearest_neighbors=top_k, fields=field) for field in vector_fields]
+    
+    if image_url is not None:
+        image_vector_query = VectorizableImageUrlQuery(  # Alternatively, use VectorizableImageBinaryQuery
+        #url="https://media.gettyimages.com/id/155422469/photo/office-skysraper-in-the-sun.jpg?s=1024x1024&w=gi&k=20&c=E32XYAydthNC2NY59OqU2PzGes_i40E8aywKIgtnSBI=",  #skyscrapper
+        url=image_url,
+        k_nearest_neighbors=3,
+        fields="imageVector",
+        )
+        vector_queries = [image_vector_query]
+    
     results = search_client.search(  
         search_text=search_query,  
         vector_queries= vector_queries,

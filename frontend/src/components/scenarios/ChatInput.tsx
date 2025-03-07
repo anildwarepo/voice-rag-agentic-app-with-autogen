@@ -30,6 +30,10 @@ interface ChatInputComponentProps extends Partial<TextareaProps> {
 
 const ChatInputComponent: React.FC<ChatInputComponentProps>  = ({faq, queryCategory, imageUrl, refHandleMessage,  ...props}) => {
     //function ChatInputComponent(props: Partial<TextareaProps>) {
+    
+    // create guid
+    const conversationId = crypto.randomUUID();
+
     const textareaId = useId("textarea");
     const [userQuery, setUserQuery] = useState('');
     const [isSending, setIsSending] = useState(false);
@@ -146,7 +150,7 @@ const ChatInputComponent: React.FC<ChatInputComponentProps>  = ({faq, queryCateg
         let userItems = [...chatHistory, userItem, botItem];
         setChatHistory(userItems);
         setIsSending(true);
-        sendMessage(userQuery, chatMessage as ChatMessage, handleMessage, queryCategory, imageUrl);
+        sendMessage(userQuery, chatMessage as ChatMessage, handleMessage, queryCategory, imageUrl, conversationId);
         setUserQuery('');
     }
 
